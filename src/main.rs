@@ -1,18 +1,16 @@
 mod adventure;
-mod ai_client;
 mod game_state;
 mod ui;
 
 use adventure::Adventure;
-use color_eyre::Result;
+use color_eyre::eyre::Result;
 use game_state::GameState;
 use ui::{Action, UI};
 
+use std::thread;
 use std::time::Duration;
-use tokio::time::interval;
 
-#[tokio::main]
-async fn main() -> Result<()> {
+fn main() -> Result<()> {
     color_eyre::install()?;
 
     let mut game_state = GameState::new();
@@ -27,30 +25,14 @@ async fn main() -> Result<()> {
         if let Some(action) = ui.handle_input()? {
             match action {
                 Action::Generate => {
-                    // display spinner and loading text while generating
-                    let generate_future = Adventure::generate(&game_state.settings);
-                    let mut spinner_interval = interval(Duration::from_millis(100));
-                    let mut loading_text_interval = interval(Duration::from_millis(5_000));
+                    // Display spinner while generating
+                    for _ in 0..10 {
+                        ui.display_spinner(spinner_chars[spinner_index])?;
+                        spinner_index = (spinner_index + 1) % spinner_chars.len();
+                        thread::sleep(Duration::from_millis(100));
+                    }
 
-                    let adventure = tokio::select! {
-                        adventure = generate_future => adventure?,
-                        _ = async {
-                                loop {
-                                    tokio::select! {
-                                        _ = spinner_interval.tick() => {
-                                            ui.update_spinner(spinner_chars[spinner_index])?;
-                                            spinner_index = (spinner_index + 1) % spinner_chars.len()
-                                        }
-                                        _ = loading_text_interval.tick() => {
-                                            ui.update_loading_text()?;
-                                        }
-                                    }
-                                }
-                                #[allow(unreachable_code)]
-                                Ok::<_, color_eyre::eyre::Error>(())
-                            } => unreachable!()
-                    };
-
+                    let adventure = Adventure::generate(&game_state.settings);
                     game_state.set_current_adventure(adventure);
                 }
                 Action::Customize => {

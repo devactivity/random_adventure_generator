@@ -9,7 +9,6 @@ use ratatui::{
     widgets::{Block, Borders, List, ListItem, Paragraph},
     Frame, Terminal,
 };
-
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -100,7 +99,7 @@ impl GameState {
             .constraints(
                 [
                     Constraint::Length(3),
-                    Constraint::Min(3),
+                    Constraint::Min(5),
                     Constraint::Length(3),
                 ]
                 .as_ref(),
@@ -149,7 +148,7 @@ impl GameState {
         );
 
         let instructions =
-            Paragraph::new("Use Up/Down arrows to navigate, Enter to select, esc to exit")
+            Paragraph::new("Use Up/Down arrows to navigate, Enter to select, Esc to exit")
                 .style(Style::default().fg(Color::Gray))
                 .alignment(ratatui::layout::Alignment::Center);
         f.render_widget(instructions, chunks[2]);
@@ -184,14 +183,12 @@ impl GameState {
             let serialized = serde_json::to_string(adventure)?;
             std::fs::write("saved_adventure.json", serialized)?;
         }
-
         Ok(())
     }
 
     pub fn load_adventure(&mut self) -> Result<()> {
         let serialized = std::fs::read_to_string("saved_adventure.json")?;
         let adventure: Adventure = serde_json::from_str(&serialized)?;
-
         self.current_adventure = Some(adventure);
         Ok(())
     }
